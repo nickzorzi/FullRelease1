@@ -23,8 +23,8 @@ public class InputManager : MonoBehaviour
 
     private InputAction _interactAction;
     private InputAction _equipAction;
-    private InputAction _throwAction;
-    private InputAction _focusAction;
+    //private InputAction _throwAction;
+    //private InputAction _focusAction;
 
     private void Awake()
     {
@@ -36,8 +36,8 @@ public class InputManager : MonoBehaviour
         _jumpAction = _playerInput.actions["Jump"];
         _interactAction = _playerInput.actions["Interact"];
         _equipAction = _playerInput.actions["Equip"];
-        _throwAction = _playerInput.actions["Throw"];
-        _focusAction = _playerInput.actions["Focus"];
+        //_throwAction = _playerInput.actions["Throw"];
+        //_focusAction = _playerInput.actions["Focus"];
     }
 
     private void Update()
@@ -54,8 +54,8 @@ public class InputManager : MonoBehaviour
 
         EquipPressed = _equipAction.triggered;
 
-        ThrowPressed = _throwAction.triggered;
+        //ThrowPressed = _throwAction.triggered;
 
-        FocusPressed = _focusAction.IsPressed();
+        //FocusPressed = _focusAction.IsPressed();
     }
 }
