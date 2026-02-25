@@ -9,7 +9,7 @@ public class AssetHandler
     public static bool OpenEditor(int instanceId, int line)
     {
         SoundDataStorage obj = EditorUtility.EntityIdToObject(instanceId) as SoundDataStorage;
-        if (obj != null)
+        if(obj != null)
         {
             SoundManagerEditorWindow.Open(obj);
             return true;

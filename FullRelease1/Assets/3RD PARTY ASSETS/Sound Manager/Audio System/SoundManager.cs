@@ -12,6 +12,8 @@ public class SoundManager : MonoBehaviour
     [Header("Sound Controls")]
     public AudioMixer audioMixer;
 
+    [Space(20)]
+    [SerializeField] Vector2 pitchShiftMinMax = new Vector2(-.5f, 1.5f);
 
     [Header("Audio Source Management")]
     [SerializeField] int sfxPoolSize = 3;
@@ -176,7 +178,7 @@ public class SoundManager : MonoBehaviour
             audioSource.gameObject.SetActive(true);
             audioSource.clip = clip;
             audioSource.volume = volume;
-            audioSource.pitch = pitchShift ? Random.Range(0.5f, 1.5f) : 1;
+            audioSource.pitch = pitchShift ? Random.Range(pitchShiftMinMax.x, pitchShiftMinMax.y) : 1;
             audioSource.Play();
 
             StartCoroutine(ReturnAudioSourceToPool(audioSource, clip.length));
@@ -189,7 +191,7 @@ public class SoundManager : MonoBehaviour
             newAudioSource.gameObject.SetActive(true);
             newAudioSource.clip = clip;
             newAudioSource.volume = volume;
-            newAudioSource.pitch = pitchShift ? Random.Range(0.75f, 1.25f) : 1;
+            newAudioSource.pitch = pitchShift ? Random.Range(pitchShiftMinMax.x, pitchShiftMinMax.y) : 1;
             newAudioSource.Play();
             sfxPoolSize++;
 
@@ -464,7 +466,7 @@ public class SoundManager : MonoBehaviour
     }
 
     // grabs either a random clip at specified location or a specific clip from the list
-    public AudioClip FindClip(string categoryName, string soundName, bool randomSound = true, int soundIndex = default)
+    AudioClip FindClip(string categoryName, string soundName, bool randomSound = true, int soundIndex = default)
     {
         AudioClip clip = null;
 
@@ -499,46 +501,7 @@ public class SoundManager : MonoBehaviour
         return clip;
     }
 
-    // grabs either a random clip at specified location or a specific clip from the list
-    public AudioClip FindClip(string soundPath, bool randomSound = true, int soundIndex = default)
-    {
-        AudioClip clip = null;
 
-        string[] temp = soundPath.Split('.');
-
-        string categoryName = temp[0];
-        string soundName = temp[1];
-
-        if (randomSound)
-        {
-            SoundDataStorage.SoundDataPack selectedPack;
-            try
-            {
-                selectedPack =
-                    instance.sounds.AudioList.First(x => x.categoryName == categoryName).sounds.FirstOrDefault(y => y.name == soundName);
-            }
-            catch
-            {
-                Debug.LogWarning($"No Audio Clip found in {categoryName}.{soundName}");
-                selectedPack = default;
-            }
-            if (selectedPack.audioClips.Count <= 0) { Debug.LogWarning($"{categoryName}.{soundName} does not exist, Check Spelling"); return null; }
-            clip = selectedPack.audioClips[Random.Range(0, selectedPack.audioClips.Count)];
-
-        }
-        else
-        {
-            try
-            {
-                clip = instance.sounds.AudioList.First(x => x.categoryName == categoryName).sounds.FirstOrDefault(y => y.name == soundName).audioClips[soundIndex];
-            }
-            catch
-            {
-                Debug.LogWarning("sound Index is out of Range of array");
-            }
-        }
-        return clip;
-    }
 
     void InitializeAudioPool()
     {
@@ -549,6 +512,40 @@ public class SoundManager : MonoBehaviour
             newAudioSource.gameObject.SetActive(false); // Initially inactive
             audioPool.Enqueue(newAudioSource);
         }
+    }
+
+    // Hot fix to allow new Enum System to work with old String System
+
+
+    private bool TrySplitEnum(System.Enum soundEnum, out string categoryName, out string soundName)
+    {
+        categoryName = null;
+        soundName = null;
+
+        string enumName = soundEnum.ToString();
+
+        string[] split = enumName.Split(new string[] { "__" }, System.StringSplitOptions.None);
+
+        if (split.Length != 2)
+        {
+            Debug.LogWarning($"Invalid enum format: {enumName}. Expected Category__Name");
+            return false;
+        }
+
+        categoryName = split[0];
+        soundName = split[1];
+
+        return true;
+    }
+
+    public void playSound<T>(T soundEnum, Transform location, float volume = 1,
+                         bool pitchShift = false, bool randomSound = true, int soundIndex = 0)
+    where T : System.Enum
+    {
+        if (!TrySplitEnum(soundEnum, out string categoryName, out string soundName))
+            return;
+
+        playSound($"{categoryName}.{soundName}", location, volume, pitchShift, randomSound, soundIndex);
     }
 
 }

@@ -1,5 +1,6 @@
-using UnityEngine;
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEngine;
 
 
 public class SoundManagerEditorWindow : ExtendedEditorWindow
@@ -24,6 +25,14 @@ public class SoundManagerEditorWindow : ExtendedEditorWindow
         currentProperty = serializedObject.FindProperty("AudioList");
 
         EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Save & Generate Enums"))
+        {
+            GenerateEnums();
+        }
+        EditorGUILayout.EndHorizontal();
+
+
+        EditorGUILayout.BeginHorizontal();
 
         // This Draws The array of Buttons for the first List
         EditorGUILayout.BeginVertical("box", GUILayout.MaxWidth(150),GUILayout.ExpandHeight(true));
@@ -40,6 +49,7 @@ public class SoundManagerEditorWindow : ExtendedEditorWindow
             newElement.FindPropertyRelative("categoryName").stringValue = "Blank Category";
             newElement.FindPropertyRelative("sounds").ClearArray();
         }
+
         EditorGUILayout.EndVertical();
 
 
@@ -186,5 +196,147 @@ public class SoundManagerEditorWindow : ExtendedEditorWindow
         {
             Debug.LogWarning("Item not found in the list!");
         }
+    }
+
+
+    string CleanName(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return "Unnamed";
+
+        input = input.Replace(" ", "_");
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        foreach (char c in input)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_')
+                sb.Append(c);
+        }
+
+        string result = sb.ToString();
+
+        if (string.IsNullOrEmpty(result))
+            result = "Unnamed";
+
+        if (char.IsDigit(result[0]))
+            result = "_" + result;
+
+        return result;
+    }
+
+
+    void GenerateEnums()
+    {
+        serializedObject.ApplyModifiedProperties();
+
+        SoundDataStorage storage = (SoundDataStorage)serializedObject.targetObject;
+
+        if (storage == null)
+        {
+            Debug.LogError("No SoundDataStorage assigned.");
+            return;
+        }
+
+        string assetName = CleanName(storage.name);
+        string folderPath = "Assets/_Audio";
+
+        if (!AssetDatabase.IsValidFolder(folderPath))
+            AssetDatabase.CreateFolder("Assets", "_Audio");
+
+        string filePath = $"{folderPath}/{assetName}Enums.cs";
+
+        // STEP 1: Read existing enum values (if file exists)
+        Dictionary<string, int> existingValues = new Dictionary<string, int>();
+        int highestValue = -1;
+
+        if (System.IO.File.Exists(filePath))
+        {
+            string[] lines = System.IO.File.ReadAllLines(filePath);
+
+            foreach (string line in lines)
+            {
+                string trimmed = line.Trim();
+
+                if (trimmed.Contains("="))
+                {
+                    // Example: Player__Walk = 3,
+                    string[] parts = trimmed.Split('=');
+                    if (parts.Length < 2) continue;
+
+                    string name = parts[0].Trim().Trim(',');
+                    string numberPart = parts[1].Trim().Trim(',');
+
+                    if (int.TryParse(numberPart, out int value))
+                    {
+                        if (!existingValues.ContainsKey(name))
+                            existingValues.Add(name, value);
+
+                        if (value > highestValue)
+                            highestValue = value;
+                    }
+                }
+            }
+        }
+
+        int nextValue = highestValue + 1;
+
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+
+        builder.AppendLine("// AUTO-GENERATED. DO NOT EDIT.");
+        builder.AppendLine("using UnityEngine;");
+        builder.AppendLine();
+        builder.AppendLine("public static class SoundSystem");
+        builder.AppendLine("{");
+        builder.AppendLine($"    public enum {assetName}");
+        builder.AppendLine("    {");
+
+        HashSet<string> usedNames = new HashSet<string>();
+
+        foreach (var category in storage.AudioList)
+        {
+            if (string.IsNullOrEmpty(category.categoryName))
+                continue;
+
+            string categoryName = CleanName(category.categoryName);
+
+            foreach (var sound in category.sounds)
+            {
+                if (string.IsNullOrEmpty(sound.name))
+                    continue;
+
+                string valueName = CleanName($"{categoryName}__{sound.name}");
+
+                if (usedNames.Contains(valueName))
+                    continue;
+
+                usedNames.Add(valueName);
+
+                int assignedValue;
+
+                if (existingValues.TryGetValue(valueName, out int existing))
+                {
+                    assignedValue = existing; // preserve old value
+                }
+                else
+                {
+                    assignedValue = nextValue;
+                    nextValue++;
+                }
+
+                string displayName = $"{category.categoryName} - {sound.name}";
+
+                builder.AppendLine($"        [InspectorName(\"{displayName}\")]");
+                builder.AppendLine($"        {valueName} = {assignedValue},");
+            }
+        }
+
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+
+        System.IO.File.WriteAllText(filePath, builder.ToString());
+        AssetDatabase.Refresh();
+
+        Debug.Log($"{assetName} enum regenerated safely (values preserved).");
     }
 }
