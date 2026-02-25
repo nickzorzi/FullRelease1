@@ -7,10 +7,6 @@ public static class SoundSystem
     {
         [InspectorName("Player - Flashlight")]
         Player__Flashlight = 0,
-        [InspectorName("Player - StepMetal")]
-        Player__StepMetal = 3,
-        [InspectorName("Player - StepWood")]
-        Player__StepWood = 4,
         [InspectorName("UI - Hover")]
         UI__Hover = 1,
         [InspectorName("UI - Click")]
