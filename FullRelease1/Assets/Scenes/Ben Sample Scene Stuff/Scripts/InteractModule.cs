@@ -1,16 +1,20 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.InputSystem;
 
 public class InteractModule : MonoBehaviour
 {
 
     [SerializeField] float distanceToInteract = 2f;
     [SerializeField] float distCheckSpeed = .3f;
-    [SerializeField] string displayText;
+    public string displayText;
     
     [Space(15)]
     [SerializeField] Vector3 playerPosOffset = Vector3.up;
 
+    [Space(15)]
+    public UnityEvent onInteracted;
 
     [Header("Debug")]
     [SerializeField] bool showDebugLines;
@@ -20,6 +24,8 @@ public class InteractModule : MonoBehaviour
 
     bool isShowing;
 
+    [HideInInspector]
+    public bool isInteracted;
 
     private void Start()
     {
@@ -28,10 +34,25 @@ public class InteractModule : MonoBehaviour
         playerPos = PlayerManager.Instance.transform;
     }
 
+    private void Update()
+    {
+        if(!isInteracted && isShowing && InputManager.InteractPressed)
+        {
+            isInteracted = true;
+            onInteracted?.Invoke();
+        }
+    }
+
+    public void ResetInteract()
+    {
+        isInteracted = false;
+        StartCoroutine(CheckDistanceRoutine());
+    }
+
 
     IEnumerator CheckDistanceRoutine()
     {
-        while (true)
+        while (!isInteracted)
         {
             if (playerPos == null)
             {
@@ -39,7 +60,7 @@ public class InteractModule : MonoBehaviour
                 continue;
             }
 
-            float distance = Vector3.Distance(transform.position, playerPos.position);
+            float distance = Vector3.Distance(transform.position, playerPos.position + playerPosOffset);
 
             // Player entered range
             if (distance <= distanceToInteract)

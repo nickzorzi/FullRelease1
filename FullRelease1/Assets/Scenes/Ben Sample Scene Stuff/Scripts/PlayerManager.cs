@@ -1,3 +1,4 @@
+using CMF;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -30,10 +31,12 @@ public class PlayerManager : MonoBehaviour
 
     Vector3 startCamPos;
 
+    float startSpeed;
+
     bool isZoomActive;
     bool isPOVSwitchCD;
     bool isPOVOnLeftSide;
-
+    bool isHiding;
 
     private void Awake()
     {
@@ -41,17 +44,23 @@ public class PlayerManager : MonoBehaviour
 
         startCamPos = playerPOVTarget.localPosition;
         flashlight.SetActive(false);
+
+        startSpeed = GetComponent<AdvancedWalkerController>().movementSpeed;
     }
 
 
     public void OnFlashlight()
     {
+        if (isHiding) return;
+
         flashlight.SetActive(!flashlight.activeSelf);
         SoundManager.instance.playSound(flashlightSFX, transform);
     }
 
     public void OnPlayerZoom(InputValue value)
     {
+        if(isHiding) return;
+
         if(!isZoomActive && value.Get<float>() > 0) // FPS
         {
             LeanTween.moveLocal(playerPOVTarget.gameObject, Vector3.down * .5f, zoomInSpeed)
@@ -84,11 +93,42 @@ public class PlayerManager : MonoBehaviour
     {
         //Debug.Log("Input Recieved");
 
-        if (isPOVSwitchCD || isZoomActive) return;
+        if (isPOVSwitchCD || isZoomActive || isHiding) return;
 
         StartCoroutine(SwitchPlayerPOV());
 
     }
+
+    public void EnterHideMode()
+    {
+        GetComponent<AdvancedWalkerController>().movementSpeed = 0;
+
+        isHiding = true;
+
+        LeanTween.moveLocal(playerPOVTarget.gameObject, Vector3.down * .5f, zoomInSpeed)
+            .setOnComplete(() =>
+            {
+                playerModel.SetActive(false);
+            });
+
+
+        if (isPOVOnLeftSide) SetFPSPOVSettings();
+
+    }
+
+    public void LeaveHideMode()
+    {
+        GetComponent<AdvancedWalkerController>().movementSpeed = startSpeed;
+
+        LeanTween.moveLocal(playerPOVTarget.gameObject, startCamPos, zoomInSpeed)
+            .setOnStart(() =>
+            {
+                playerModel.SetActive(true);
+                OnPlayerZoomOut?.Invoke();
+            });
+        isHiding = false;
+    }
+
 
     void SetFPSPOVSettings()
     {
