@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
 public class PlayerManager : MonoBehaviour
 {
+    public static PlayerManager Instance;
+
     [Header("Camera Controls")]
     [SerializeField] Transform playerPOVTarget;
     [SerializeField] float povSwitchSpeed = 0.2f;
@@ -36,6 +37,8 @@ public class PlayerManager : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
+
         startCamPos = playerPOVTarget.localPosition;
         flashlight.SetActive(false);
     }
