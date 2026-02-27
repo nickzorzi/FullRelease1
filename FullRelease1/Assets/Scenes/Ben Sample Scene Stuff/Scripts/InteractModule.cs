@@ -40,6 +40,8 @@ public class InteractModule : MonoBehaviour
         {
             isInteracted = true;
             onInteracted?.Invoke();
+            HUDManager.instance.HideInteract(gameObject);
+            isShowing = false;
         }
     }
 

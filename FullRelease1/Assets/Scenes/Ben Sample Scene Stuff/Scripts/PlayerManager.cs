@@ -9,15 +9,15 @@ public class PlayerManager : MonoBehaviour
     public static PlayerManager Instance;
 
     [Header("Camera Controls")]
+    [SerializeField] GameObject playerModel;
     [SerializeField] Transform playerPOVTarget;
     [SerializeField] float povSwitchSpeed = 0.2f;
     [SerializeField] float povSwitchCD = .1f;
     
 
     [Header("Zoom Controls")]
-    [SerializeField] GameObject playerModel;
     [SerializeField] float zoomInSpeed = .1f;
-
+    [SerializeField] float zoomInOffset = -1f;
 
     [Header("Flash light Controls")]
     [SerializeField] GameObject flashlight;
@@ -63,10 +63,9 @@ public class PlayerManager : MonoBehaviour
 
         if(!isZoomActive && value.Get<float>() > 0) // FPS
         {
-            LeanTween.moveLocal(playerPOVTarget.gameObject, Vector3.down * .5f, zoomInSpeed)
+            LeanTween.moveLocalZ(playerPOVTarget.gameObject, zoomInOffset, zoomInSpeed)
                 .setOnComplete(() =>
                 {
-                    playerModel.SetActive(false);
                     OnPlayerZoomIn?.Invoke();
                 });
 
@@ -77,10 +76,9 @@ public class PlayerManager : MonoBehaviour
         }
         else if(isZoomActive && value.Get<float>() <= 0) // Third Person
         {
-            LeanTween.moveLocal(playerPOVTarget.gameObject, startCamPos, zoomInSpeed)
+            LeanTween.moveLocalZ(playerPOVTarget.gameObject, startCamPos.z, zoomInSpeed)
                 .setOnStart(() =>
                 {
-                    playerModel.SetActive(true);
                     OnPlayerZoomOut?.Invoke();
                 });
             isZoomActive = false;
@@ -93,7 +91,7 @@ public class PlayerManager : MonoBehaviour
     {
         //Debug.Log("Input Recieved");
 
-        if (isPOVSwitchCD || isZoomActive || isHiding) return;
+        if (isPOVSwitchCD || isHiding) return;
 
         StartCoroutine(SwitchPlayerPOV());
 
