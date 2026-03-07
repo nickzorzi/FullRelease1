@@ -12,8 +12,12 @@ public class InputManager : MonoBehaviour
     public static bool EquipPressed { get; private set; }
     public static bool ThrowPressed { get; private set; }
     public static bool FocusPressed { get; private set; }
+    public static bool PlayerZoomPressed { get; private set; }
+    public static bool PlayerZoomHeld { get; private set; }
+    public static bool Mouse1Pressed { get; private set; }
+    public static bool Mouse1Held { get; private set; }
 
-    
+
 
     private PlayerInput _playerInput;
     private InputAction _lookAction;
@@ -25,6 +29,9 @@ public class InputManager : MonoBehaviour
     private InputAction _equipAction;
     //private InputAction _throwAction;
     //private InputAction _focusAction;
+
+    private InputAction _zoomAction;
+    private InputAction _mouse1Action;
 
     private void Awake()
     {
@@ -38,6 +45,8 @@ public class InputManager : MonoBehaviour
         _equipAction = _playerInput.actions["Equip"];
         //_throwAction = _playerInput.actions["Throw"];
         //_focusAction = _playerInput.actions["Focus"];
+        _zoomAction = _playerInput.actions["PlayerZoom"];
+        _mouse1Action = _playerInput.actions["Mouse1"];
     }
 
     private void Update()
@@ -57,5 +66,11 @@ public class InputManager : MonoBehaviour
         //ThrowPressed = _throwAction.triggered;
 
         //FocusPressed = _focusAction.IsPressed();
+
+        PlayerZoomPressed = _zoomAction.triggered;
+        PlayerZoomHeld = _zoomAction.ReadValue<float>() > 0f;
+
+        Mouse1Pressed = _mouse1Action.triggered;
+        Mouse1Held = _mouse1Action.ReadValue<float>() > 0f;
     }
 }
